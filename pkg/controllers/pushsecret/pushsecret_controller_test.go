@@ -71,7 +71,7 @@ func checkCondition(status v1alpha1.PushSecretStatus, cond v1alpha1.PushSecretSt
 
 type testTweaks func(*testCase)
 
-var _ = Describe("ExternalSecret controller", func() {
+var _ = Describe("PushSecret controller", func() {
 	const (
 		PushSecretName  = "test-es"
 		PushSecretStore = "test-store"
@@ -674,6 +674,39 @@ var _ = Describe("ExternalSecret controller", func() {
 			return checkCondition(ps.Status, expected)
 		}
 	}
+
+	skipUnmanagedStore := func(tc *testCase) {
+		tc.store = &v1beta1.SecretStore{
+			TypeMeta: metav1.TypeMeta{
+				Kind: "SecretStore",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      PushSecretStore,
+				Namespace: PushSecretNamespace,
+				Labels: map[string]string{
+					"foo": "bar",
+				},
+			},
+			Spec: v1beta1.SecretStoreSpec{
+				Provider: &v1beta1.SecretStoreProvider{
+					Fake: &v1beta1.FakeProvider{
+						Data: []v1beta1.FakeProviderData{},
+					},
+				},
+				Controller: "different-controller",
+			},
+		}
+		tc.assert = func(ps *v1alpha1.PushSecret, secret *v1.Secret) bool {
+			expected := v1alpha1.PushSecretStatusCondition{
+				Type:    v1alpha1.PushSecretReady,
+				Status:  v1.ConditionFalse,
+				Reason:  v1alpha1.ReasonErrored,
+				Message: "could not get SecretStore \"test-store\", secretstores.external-secrets.io \"test-store\" not found",
+			}
+			return checkCondition(ps.Status, expected)
+		}
+	}
+
 	DescribeTable("When reconciling a PushSecret",
 		func(tweaks ...testTweaks) {
 			tc := makeDefaultTestcase()
@@ -718,5 +751,6 @@ var _ = Describe("ExternalSecret controller", func() {
 		Entry("should fail if no valid SecretStore", failNoSecretStore),
 		Entry("should fail if no valid ClusterSecretStore", failNoClusterStore),
 		Entry("should fail if NewClient fails", newClientFail),
+		Entry("should skip if unmanaged store", skipUnmanagedStore),
 	)
 })
