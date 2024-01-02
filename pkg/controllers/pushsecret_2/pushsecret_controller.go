@@ -82,6 +82,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	var ps esapi.PushSecret
 	mgr := secretstore.NewManager(r.Client, r.ControllerClass, false)
 	defer mgr.Close(ctx)
+
 	if err := r.Get(ctx, req.NamespacedName, &ps); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -101,8 +102,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
     //check for valid controllers
     skip, err := shouldSkipUnmanagedStore(ctx, req.Namespace, r, ps)
-    log.Info(fmt.Sprintf("%t",skip))
-    log.Info("skipping unmanaged store as it points to a unmanaged controllerClass")
     if skip {
         log.Info("skipping unmanaged store as it points to a unmanaged controllerClass")
         return ctrl.Result{}, nil
@@ -440,5 +439,5 @@ func statusRef(ref v1beta1.PushSecretData) string {
 }
 
 func shouldSkipUnmanagedStore(ctx context.Context, namespace string, r *Reconciler, ps esapi.PushSecret) (bool, error) {
-	return true, nil
+	return false, nil
 }

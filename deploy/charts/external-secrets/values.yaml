@@ -39,7 +39,7 @@ leaderElect: false
 
 # -- If set external secrets will filter matching
 # Secret Stores with the appropriate controller values.
-controllerClass: ""
+controllerClass: "BAR"
 
 # -- If true external secrets will use recommended kubernetes
 # annotations as prometheus metric labels.
